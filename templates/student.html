@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Portal - AI Project Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<header>
+  Student Project Submission Portal
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Analysis & Viva</h3>
+    <div id="analysisNotice">Loading analysis results...</div>
+    <button onclick="window.location='/'" style="margin-top:15px;background:#334155;">Back to Submission</button>
+  </div>
+
+  <div class="card">
+    <h3>Analysis Status</h3>
+    <div id="status">No submission yet</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="card">
+    <h3>Results</h3>
+
+    <div class="result">
+      <div>Score</div>
+      <div class="score" id="score">--</div>
+    </div>
+
+    <div class="result">
+      <div>Detected Skills</div>
+      <div id="skills"></div>
+    </div>
+
+    <div class="result">
+      <div>Tech Stack</div>
+      <pre id="techStack">--</pre>
+    </div>
+
+    <div class="result">
+      <div>Important Files</div>
+      <pre id="importantFiles">--</pre>
+    </div>
+
+    
+
+  <!-- VIVA -->
+  <div class="card">
+    <h3>Viva Session</h3>
+    <button id="startVivaBtn" onclick="startViva()">Start Viva</button>
+    <button id="verifyIdBtn" onclick="verifyId()" style="display:none;margin-top:8px;">Verify ID</button>
+    <div id="vivaStatus"></div>
+    <div style="margin-top:10px">
+      <video id="vivaVideo" width="320" height="240" autoplay muted style="display:none;border-radius:6px;border:1px solid #334155"></video>
+    </div>
+  </div>
+
+  <div class="card" id="vivaQA" style="display:none;">
+    <h3>Live Viva — Answer Questions</h3>
+    <div id="proctorAlert" class="proctor-alert"></div>
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <div id="questionCol" style="flex:1;background:#0e0f0f;padding:12px;border-radius:6px;">
+    <h3>Current Question</h3>
+
+    <div id="questionsList"></div>
+
+</div>
+        <!-- question will be rendered here -->
+      </div>
+      <div id="answerCol" style="flex:1;background:#0b1220;padding:12px;border-radius:6px;">
+        <!-- answer input here -->
+      </div>
+    </div>
+    <div style="margin-top:10px;text-align:right;">
+      <button id="prevQ" onclick="changeQuestion(-1)" style="margin-right:8px;">Previous</button>
+      <button id="nextQ" onclick="changeQuestion(1)" style="margin-right:8px;">Next</button>
+      <button id="finishVivaBtn" onclick="finishViva()" style="background:#22c55e;" disabled>Finish Viva</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let submissionId = null;
+let vivaSessionId = null;
+let localStream = null;
+let vivaAnswers = {};
+let vivaCompleted = false;
+let faceDetector = null;
+let faceMonitorInterval = null;
+let faceMissing = false;
+let proctorAlertPersistent = false;
+let proctorAlertTimeout = null;
+
+function showNoAnalysis() {
+  document.getElementById('analysisNotice').innerText = 'No analysis found. Please return to the submission page to upload your ZIP file.';
+  document.getElementById('status').innerText = 'Awaiting project submission';
+  document.getElementById('score').innerText = '--';
+  document.getElementById('skills').innerHTML = '';
+  document.getElementById('feedback').innerText = '--';
+  document.getElementById('techStack').innerText = '--';
+  document.getElementById('importantFiles').innerText = '--';
+  document.getElementById('questions').innerText = '--';
+}
+
+function populateAnalysis(data) {
+  submissionId = data.project_title || 'temp';
+  document.getElementById('analysisNotice').innerText = 'Analysis loaded. Ready for viva.';
+  document.getElementById('status').innerText = 'Analysis ready';
+  document.getElementById('score').innerText = ((data.project_summary && data.project_summary.alignment_score) || '--') + ' / 1';
+  document.getElementById('skills').innerHTML = (data.detected_skills || []).map(s => `<span class="badge">${s.skill_name || s.skill || (typeof s === 'string' ? s : JSON.stringify(s))}</span>`).join('');
+  document.getElementById('techStack').innerText = JSON.stringify(data.tech_stack || [], null, 2);
+  document.getElementById('importantFiles').innerText = JSON.stringify(data.important_files || [], null, 2);
+  const questionsData = data.interview_questions || data.questions || [];
+  const questionsEl = document.getElementById('questions');
+  questionsEl.innerText = JSON.stringify(questionsData, null, 2);
+  questionsEl.className = 'generated-questions';
+  window._viva_questions = questionsData;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const raw = localStorage.getItem('analysisResult');
+    if (raw) {
+      populateAnalysis(JSON.parse(raw));
+    } else {
+      showNoAnalysis();
+    }
+  } catch (e) {
+    showNoAnalysis();
+  }
+  window._viva_index = 0;
+});
+
+// Start viva
+async function startViva() {
+  if (!submissionId) {
+    document.getElementById("vivaStatus").innerText =
+      "Please submit a project first.";
+    return;
+  }
+
+  // start server session
+  const res = await fetch("/viva-session/start", { method: "POST" });
+  const data = await res.json();
+  vivaSessionId = data.session_id;
+
+  document.getElementById("vivaStatus").innerText =
+    "Viva Started ✔ Session ID: " + vivaSessionId;
+
+  // show verify ID button
+  document.getElementById('verifyIdBtn').style.display = 'inline-block';
+  document.getElementById('startVivaBtn').style.display = 'none';
+
+  // start camera
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    localStream = stream;
+    const video = document.getElementById('vivaVideo');
+    video.srcObject = stream;
+    video.style.display = 'block';
+
+    await initFaceDetector();
+    if (!faceDetector) {
+      setProctorAlert('Face detection not supported in this browser. Tab/window alerts still work.', true);
+    }
+    startFaceMonitoring();
+
+    // send camera started event
+    await sendEvent(vivaSessionId, 'camera_started');
+    // show Q&A UI
+    showVivaQA();
+  } catch (err) {
+    console.error('camera start failed', err);
+    document.getElementById('vivaStatus').innerText += ' (camera failed)';
+  }
+}
+
+async function verifyId() {
+  if (!vivaSessionId) return;
+  // capture current frame and send id_verified event
+  try {
+    const video = document.getElementById('vivaVideo');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg');
+
+    await sendEvent(vivaSessionId, 'id_verified', { snapshot: dataUrl, confidence: 0.98 });
+    document.getElementById('vivaStatus').innerText += ' — ID verified';
+    document.getElementById('verifyIdBtn').style.display = 'none';
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function sendEvent(sessionId, eventType, extra={}) {
+  if (!sessionId) return;
+  const form = new FormData();
+  form.append('session_id', sessionId);
+  form.append('event_type', eventType);
+  form.append('timestamp', new Date().toISOString());
+  if (extra.duration_ms) form.append('duration_ms', extra.duration_ms);
+  if (extra.confidence) form.append('confidence', extra.confidence);
+  // optionally include snapshot as separate upload in future
+  try {
+    await fetch('/viva-session/event', { method: 'POST', body: form });
+  } catch (e) {
+    console.error('sendEvent failed', e);
+  }
+}
+
+// on load, restore analysis result if available
+window.addEventListener('DOMContentLoaded', () => {
+  try {
+    const raw = localStorage.getItem('analysisResult');
+    if (raw) {
+      const data = JSON.parse(raw);
+      submissionId = data.project_title || 'temp';
+      const questionsData = data.interview_questions || data.questions || [];
+      document.getElementById('status').innerText = 'Analysis loaded — ready for viva';
+      document.getElementById('score').innerText = ((data.project_summary && data.project_summary.alignment_score) || '--') + ' / 1';
+      const detected = data.detected_skills || [];
+      document.getElementById('skills').innerHTML = detected.map(s => `<span class="badge">${s.skill_name || s.skill || (typeof s==='string'?s:JSON.stringify(s))}</span>`).join('');
+      document.getElementById('feedback').innerText = JSON.stringify(data.project_summary || {}, null, 2);
+      document.getElementById('techStack').innerText = JSON.stringify(data.tech_stack || [], null, 2);
+      document.getElementById('importantFiles').innerText = JSON.stringify(data.important_files || [], null, 2);
+      const questionsEl = document.getElementById('questions');
+      questionsEl.innerText = JSON.stringify(questionsData, null, 2);
+      questionsEl.className = 'generated-questions';
+      window._viva_questions = questionsData;
+    }
+  } catch (e) {
+    // ignore
+  }
+  // prepare QA UI state
+  try {
+    const raw = localStorage.getItem('analysisResult');
+    if (raw) {
+      const data = JSON.parse(raw);
+      window._viva_questions = data.interview_questions || [];
+    } else {
+      window._viva_questions = [];
+    }
+  } catch (e) { window._viva_questions = []; }
+  window._viva_index = 0;
+});
+
+function showVivaQA() {
+  document.getElementById('vivaQA').style.display = 'block';
+  document.getElementById('finishVivaBtn').disabled = true;
+  vivaCompleted = false;
+  setProctorAlert('', false);
+  renderQuestion(window._viva_index);
+}
+
+async function initFaceDetector() {
+  if ('FaceDetector' in window) {
+    try {
+      faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+    } catch (e) {
+      console.warn('FaceDetector initialization failed', e);
+      faceDetector = null;
+    }
+  }
+}
+
+function startFaceMonitoring() {
+  if (faceMonitorInterval || !faceDetector) return;
+  faceMonitorInterval = setInterval(() => {
+    checkFacePresence();
+  }, 5000);
+}
+
+function stopFaceMonitoring() {
+  if (faceMonitorInterval) {
+    clearInterval(faceMonitorInterval);
+    faceMonitorInterval = null;
+  }
+}
+
+async function checkFacePresence() {
+  if (!faceDetector) return;
+  const video = document.getElementById('vivaVideo');
+  if (!video || video.readyState < 2) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 320;
+  canvas.height = video.videoHeight || 240;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  try {
+    const faces = await faceDetector.detect(canvas);
+    if (!faces || faces.length === 0) {
+      if (!faceMissing) {
+        faceMissing = true;
+        setProctorAlert('Face not detected. Please look at the camera.', true, 'warning');
+        if (vivaSessionId) sendEvent(vivaSessionId, 'face_not_detected', { duration_ms: 0, confidence: 0.4 });
+      }
+    } else {
+      if (faceMissing) {
+        faceMissing = false;
+        setProctorAlert('Face detected. Continue with the viva.', false, 'success');
+      }
+    }
+  } catch (err) {
+    console.warn('Face detection failed:', err);
+  }
+}
+
+function renderQuestion(i) {
+
+    const qs = window._viva_questions || [];
+
+    if (qs.length === 0) {
+        document.getElementById("questionsList").innerHTML =
+            "<h3>No Questions Available</h3>";
+        return;
+    }
+
+    const q = qs[i];
+    console.log("Current Question Object:", q);
+    console.log("All Questions:", qs);
+
+    const questionsList = document.getElementById("questionsList");
+    if (typeof q === 'string') {
+        questionsList.innerHTML = `
+          <div class="current-question">
+            <div class="question-title">Question ${i + 1}</div>
+            <div class="question-text">${q}</div>
+          </div>
+        `;
+    } else {
+        let technical = "";
+        let contextual = "";
+
+        if (q.questions && q.questions.length > 0) {
+            technical = q.questions[0].technical || "";
+            contextual = q.questions[0].contextual || "";
+        }
+
+        questionsList.innerHTML = `
+            <div class="current-question">
+                <div class="question-title">${q.skill_name || 'Interview Question'}</div>
+                <div class="question-text"><b>Technical Question</b><br>${technical}</div>
+                <hr>
+                <div class="question-text"><b>Contextual Question</b><br>${contextual}</div>
+            </div>
+        `;
+    }
+
+    document.getElementById("answerCol").innerHTML = `
+        <div style="margin-bottom:6px;color:#94f7a8">
+            Your Answer
+        </div>
+
+        <textarea id="answerInput"
+            style="width:100%;height:180px;background:#081226;color:#e2e8f0;border-radius:6px;padding:8px;border:none"></textarea>
+
+        <div style="margin-top:8px;text-align:right;">
+            <button onclick="submitAnswer(${i})">
+                Submit Answer
+            </button>
+        </div>
+    `;
+}
+
+async function finishViva() {
+  if (!vivaSessionId) {
+    setProctorAlert('Start viva first to finish.', true);
+    return;
+  }
+
+  setProctorAlert('Finalizing viva and generating report...', true);
+
+  const form = new FormData();
+  form.append('session_id', vivaSessionId);
+
+  try {
+    const res = await fetch('/viva-session/end', { method: 'POST', body: form });
+    const integrity = await res.json();
+
+    const analysis = JSON.parse(localStorage.getItem('analysisResult') || '{}');
+    const reportData = {
+      project: {
+        title: analysis.project_title || '',
+        student: analysis.student_name || '',
+        description: analysis.project_description || ''
+      },
+      score: ((analysis.project_summary && analysis.project_summary.alignment_score) || 0) * 100,
+      skills: analysis.detected_skills || [],
+      tech_stack: analysis.tech_stack || [],
+      important_files: analysis.important_files || [],
+      outcomes: analysis.outcome_evaluation || [],
+      questions: analysis.interview_questions || [],
+      answers: vivaAnswers,
+      integrity: integrity,
+      verdict: (analysis.project_summary && analysis.project_summary.verdict) || integrity.risk_level || 'Report generated',
+      summary: analysis.project_summary || {}
+    };
+
+    localStorage.setItem('finalReport', JSON.stringify(reportData));
+    window.location = '/report';
+  } catch (err) {
+    setProctorAlert('Unable to finalize viva: ' + err.message, true);
+  }
+}
+
+function changeQuestion(delta) {
+  const newIdx = Math.max(0, Math.min((window._viva_questions||[]).length-1, window._viva_index + delta));
+  window._viva_index = newIdx;
+  renderQuestion(newIdx);
+}
+
+async function submitAnswer(i) {
+  const txt = document.getElementById('answerInput').value || '';
+  // store locally
+  try {
+    vivaAnswers[i] = txt;
+    localStorage.setItem('viva_answers', JSON.stringify(vivaAnswers));
+  } catch (e) {}
+  // notify server
+  if (vivaSessionId) {
+    await sendEvent(vivaSessionId, 'answer_submitted', { duration_ms: 0, confidence: 1.0 });
+  }
+
+  const lastIndex = (window._viva_questions || []).length - 1;
+  if (i === lastIndex) {
+    vivaCompleted = true;
+    document.getElementById('questionsList').innerHTML = `
+      <div class="current-question">
+        <div class="question-title">Thank You</div>
+        <div class="question-text">You have answered all generated questions. You may finish the viva now.</div>
+      </div>
+    `;
+    document.getElementById('answerCol').innerHTML = '';
+    document.getElementById('finishVivaBtn').disabled = false;
+    setProctorAlert('Thank you for completing the questions.', true);
+    return;
+  }
+
+  // advance
+  changeQuestion(1);
+}
+
+// Proctoring: detect tab switches and inactivity
+let _idleTimer = null;
+let _idleThreshold = 10000; // 10s
+function setProctorAlert(message, persistent = false, type = 'info') {
+  const alertEl = document.getElementById('proctorAlert');
+  alertEl.innerText = message;
+  proctorAlertPersistent = persistent;
+  alertEl.classList.remove('warning', 'success');
+  if (type === 'warning') {
+    alertEl.classList.add('warning');
+  } else if (type === 'success') {
+    alertEl.classList.add('success');
+  }
+  if (proctorAlertTimeout) {
+    clearTimeout(proctorAlertTimeout);
+    proctorAlertTimeout = null;
+  }
+  if (!persistent && message) {
+    proctorAlertTimeout = setTimeout(() => {
+      if (!proctorAlertPersistent) {
+        alertEl.innerText = '';
+        alertEl.classList.remove('warning', 'success');
+      }
+    }, 5000);
+  }
+}
+
+function resetIdleTimer() {
+  if (_idleTimer) clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(() => {
+    setProctorAlert('Warning: Possible gaze off screen detected', true, 'warning');
+    if (vivaSessionId) sendEvent(vivaSessionId, 'gaze_off_screen', { duration_ms: _idleThreshold, confidence: 0.5 });
+  }, _idleThreshold);
+}
+
+['mousemove','keydown','scroll','touchstart'].forEach(evt => window.addEventListener(evt, () => {
+  if (!proctorAlertPersistent) {
+    setProctorAlert('', false);
+  }
+  resetIdleTimer();
+}));
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    setProctorAlert('You switched tabs — activity recorded', true, 'warning');
+    if (vivaSessionId) sendEvent(vivaSessionId, 'tab_switched', { duration_ms: 0, confidence: 0.5 });
+  } else if (!faceMissing) {
+    setProctorAlert('', false);
+  }
+});
+
+window.addEventListener('blur', () => {
+  setProctorAlert('You moved away from the viva window. Please return to continue.', true, 'warning');
+  if (vivaSessionId) sendEvent(vivaSessionId, 'window_blur', { duration_ms: 0, confidence: 0.5 });
+});
+
+window.addEventListener('focus', () => {
+  if (!faceMissing) {
+    setProctorAlert('', false);
+  }
+});
+
+// start idle timer now
+resetIdleTimer();
+</script>
+
+</body>
+</html>

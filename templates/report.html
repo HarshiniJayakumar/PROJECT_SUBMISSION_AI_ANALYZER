@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>AI Project Evaluation Report</title>
+
+<link rel="stylesheet" href="/static/css/style.css">
+
+<style>
+
+body{
+
+    margin:0;
+
+    font-family:Arial,Helvetica,sans-serif;
+
+    background:#eef4fb;
+
+}
+
+header{
+
+    background:linear-gradient(90deg,#2563eb,#3b82f6);
+
+    color:white;
+
+    padding:25px;
+
+    text-align:center;
+
+    font-size:28px;
+
+    font-weight:bold;
+
+    letter-spacing:1px;
+
+}
+
+.container{
+
+    width:95%;
+
+    max-width:1200px;
+
+    margin:30px auto;
+
+}
+
+.card{
+
+    background:white;
+
+    border-radius:12px;
+
+    padding:20px;
+
+    margin-bottom:25px;
+
+    box-shadow:0 5px 20px rgba(0,0,0,.08);
+
+}
+
+.section-title{
+
+    color:#2563eb;
+
+    font-size:22px;
+
+    margin-bottom:15px;
+
+    border-left:6px solid #2563eb;
+
+    padding-left:12px;
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+table td{
+
+    padding:12px;
+
+    border-bottom:1px solid #ddd;
+
+}
+
+.label{
+
+    font-weight:bold;
+
+    width:220px;
+
+    color:#374151;
+
+}
+
+.score{
+
+    font-size:48px;
+
+    text-align:center;
+
+    color:#16a34a;
+
+    font-weight:bold;
+
+}
+
+.progress{
+
+    width:100%;
+
+    height:20px;
+
+    border-radius:20px;
+
+    background:#dbeafe;
+
+    overflow:hidden;
+
+    margin-top:15px;
+
+}
+
+.progress-fill{
+
+    height:100%;
+
+    width:0%;
+
+    background:#22c55e;
+
+    transition:1s;
+
+}
+
+.badge{
+
+    display:inline-block;
+
+    background:#2563eb;
+
+    color:white;
+
+    padding:8px 14px;
+
+    border-radius:30px;
+
+    margin:5px;
+
+    font-size:14px;
+
+}
+
+pre{
+
+    white-space:pre-wrap;
+
+    background:#f8fafc;
+
+    padding:15px;
+
+    border-radius:8px;
+
+}
+
+.download{
+
+    text-align:center;
+
+}
+
+select{
+
+    width:250px;
+
+    padding:12px;
+
+    border-radius:8px;
+
+    border:1px solid #ccc;
+
+}
+
+button{
+
+    background:#2563eb;
+
+    color:white;
+
+    border:none;
+
+    padding:12px 20px;
+
+    border-radius:8px;
+
+    cursor:pointer;
+
+    margin-top:20px;
+
+    font-size:16px;
+
+}
+
+button:hover{
+
+    background:#1d4ed8;
+
+}
+
+.footer{
+
+    text-align:center;
+
+    color:#666;
+
+    padding:20px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+AI PROJECT SUBMISSION ANALYSIS REPORT
+
+</header>
+
+<div class="container">
+
+<!-- STUDENT DETAILS -->
+
+<div class="card">
+
+<div class="section-title">
+
+Student Information
+
+</div>
+
+<table>
+
+<tr>
+
+<td class="label">Student Name</td>
+
+<td id="studentName">-</td>
+
+</tr>
+
+<tr>
+
+<td class="label">Project Title</td>
+
+<td id="projectTitle">-</td>
+
+</tr>
+
+<tr>
+
+<td class="label">Submission Date</td>
+
+<td id="submissionDate">-</td>
+
+</tr>
+
+</table>
+
+</div>
+
+<!-- PROJECT DESCRIPTION -->
+
+<div class="card">
+
+<div class="section-title">
+
+Project Description
+
+</div>
+
+<pre id="projectDescription">
+
+Loading...
+
+</pre>
+
+</div>
+
+<!-- SCORE -->
+
+<div class="card">
+
+<div class="section-title">
+
+Overall Evaluation Score
+
+</div>
+
+<div class="score" id="overallScore">
+
+--
+
+</div>
+
+<div class="progress">
+
+<div
+
+id="progressFill"
+
+class="progress-fill">
+
+</div>
+
+</div>
+
+</div>
+
+<!-- DETECTED SKILLS -->
+
+<div class="card">
+
+<div class="section-title">
+
+Detected Skills
+
+</div>
+
+<div id="skillsContainer">
+
+Loading...
+
+</div>
+
+</div>
+<!-- TECHNOLOGY STACK -->
+
+<div class="card">
+
+    <div class="section-title">
+
+        Technology Stack
+
+    </div>
+
+    <div id="techStackContainer">
+
+        Loading...
+
+    </div>
+
+</div>
+
+<!-- IMPORTANT FILES -->
+
+<div class="card">
+
+    <div class="section-title">
+
+        Important Project Files
+
+    </div>
+
+    <table id="filesTable">
+
+    </table>
+
+</div>
+
+<!-- OUTCOME EVALUATION -->
+
+<div class="card">
+
+    <div class="section-title">
+
+        Outcome Evaluation
+
+    </div>
+
+    <table id="outcomeTable">
+
+    </table>
+
+</div>
+
+<!-- VIVA QUESTIONS -->
+
+<div class="card">
+
+    <div class="section-title">
+
+        Viva Questions & Student Answers
+
+    </div>
+
+    <div id="questionsContainer">
+
+    </div>
+
+</div>
+
+<!-- INTEGRITY REPORT -->
+
+<div class="card">
+
+    <div class="section-title">
+
+        Integrity Report
+
+    </div>
+
+    <table>
+
+        <tr>
+
+            <td class="label">Integrity Score</td>
+
+            <td id="integrityScore"></td>
+
+        </tr>
+
+        <tr>
+
+            <td class="label">Risk Level</td>
+
+            <td id="riskLevel"></td>
+
+        </tr>
+
+        <tr>
+
+            <td class="label">Tab Switches</td>
+
+            <td id="tabSwitches"></td>
+
+        </tr>
+
+        <tr>
+
+            <td class="label">Multiple Faces</td>
+
+            <td id="multipleFaces"></td>
+
+        </tr>
+
+        <tr>
+
+            <td class="label">Face Not Detected</td>
+
+            <td id="faceMissing"></td>
+
+        </tr>
+
+        <tr>
+
+            <td class="label">Fullscreen Exit</td>
+
+            <td id="fullscreenExit"></td>
+
+        </tr>
+
+        <tr>
+
+            <td class="label">Copy/Paste Attempts</td>
+
+            <td id="pasteAttempts"></td>
+
+        </tr>
+
+    </table>
+
+</div>
+
+<!-- FINAL VERDICT -->
+
+<div class="card">
+
+    <div class="section-title">
+
+        Final Verdict
+
+    </div>
+
+    <div id="verdictBox">
+
+        Loading...
+
+    </div>
+
+</div>
+
+<!-- DOWNLOAD REPORT -->
+
+<div class="card download">
+
+    <div class="section-title">
+
+        Download Report
+
+    </div>
+
+    <label>
+
+        Choose Report Format
+
+    </label>
+
+    <br><br>
+
+    <select id="reportFormat">
+
+        <option value="pdf">
+
+            PDF Report
+
+        </option>
+
+        <option value="json">
+
+            JSON Report
+
+        </option>
+
+    </select>
+
+    <br>
+
+    <button onclick="downloadReport()">
+
+        Download Report
+
+    </button>
+
+</div>
+
+<div class="footer">
+
+Generated by AI Project Submission Analyzer
+
+<br>
+
+<span id="generatedTime"></span>
+
+</div>
+
+<!-- JavaScript will be added in Part 4 -->
+
+</div>
+
+</body>
+
+</html>
+<script>
+const reportData = JSON.parse(localStorage.getItem("finalReport") || "{}");
+
+function loadReport(){
+
+    if(Object.keys(reportData).length===0){
+
+        alert("No report found.");
+
+        return;
+
+    }
+
+    // -----------------------
+    // Student Details
+    // -----------------------
+
+    document.getElementById("studentName").innerText =
+        reportData.project?.student || "-";
+
+    document.getElementById("projectTitle").innerText =
+        reportData.project?.title || "-";
+
+    document.getElementById("submissionDate").innerText =
+        new Date().toLocaleString();
+
+    document.getElementById("projectDescription").innerText =
+        reportData.project?.description || "-";
+
+
+    // -----------------------
+    // Score
+    // -----------------------
+
+    const score =
+        Number(reportData.score || 0);
+
+    document.getElementById("overallScore").innerHTML =
+        score + " / 100";
+
+    document.getElementById("progressFill").style.width =
+        score + "%";
+
+
+    // -----------------------
+    // Skills
+    // -----------------------
+
+    let skillsHTML = "";
+
+    (reportData.skills || []).forEach(skill=>{
+
+        const name =
+            skill.skill_name ||
+            skill.skill ||
+            skill;
+
+        skillsHTML +=
+        `<span class="badge">${name}</span>`;
+
+    });
+
+    document.getElementById("skillsContainer").innerHTML =
+        skillsHTML || "No Skills Detected";
+
+
+    // -----------------------
+    // Technology Stack
+    // -----------------------
+
+    let techHTML="";
+
+    (reportData.summary?.tech_stack ||
+     reportData.tech_stack ||
+     []).forEach(t=>{
+
+        techHTML +=
+        `<span class="badge">${t}</span>`;
+
+    });
+
+    document.getElementById("techStackContainer").innerHTML =
+        techHTML || "Not Available";
+
+
+    // -----------------------
+    // Important Files
+    // -----------------------
+
+    let fileHTML="";
+
+    (reportData.summary?.important_files ||
+     reportData.important_files ||
+     []).forEach(file=>{
+
+        fileHTML +=
+        `<tr>
+
+            <td>${file}</td>
+
+        </tr>`;
+
+    });
+
+    document.getElementById("filesTable").innerHTML =
+        fileHTML || "<tr><td>No files detected</td></tr>";
+
+
+
+    // -----------------------
+    // Outcomes
+    // -----------------------
+
+    let outcomeHTML=
+    `<tr>
+
+        <th>Outcome</th>
+
+        <th>Status</th>
+
+        <th>Evidence</th>
+
+        <th>Gap</th>
+
+    </tr>`;
+
+    (reportData.outcomes || []).forEach(item=>{
+
+        outcomeHTML+=`
+
+        <tr>
+
+            <td>${item.outcome}</td>
+
+            <td>${item.status}</td>
+
+            <td>${item.evidence}</td>
+
+            <td>${item.gap}</td>
+
+        </tr>`;
+
+    });
+
+    document.getElementById("outcomeTable").innerHTML =
+        outcomeHTML;
+        // -----------------------
+    // Viva Questions & Answers
+    // -----------------------
+
+    let questionHTML = "";
+
+    const questions = reportData.questions || [];
+    const answers = reportData.answers || {};
+
+    questions.forEach((q,index)=>{
+
+        questionHTML += `
+
+        <div class="card" style="margin-bottom:15px;">
+
+            <h4 style="color:#2563eb;">
+                Question ${index+1}
+            </h4>
+
+            <p>
+                ${q}
+            </p>
+
+            <h4 style="color:#16a34a;">
+                Student Answer
+            </h4>
+
+            <p>
+                ${answers[index] || "No Answer"}
+            </p>
+
+        </div>
+
+        `;
+
+    });
+
+    document.getElementById("questionsContainer").innerHTML =
+        questionHTML;
+
+
+
+    // -----------------------
+    // Integrity Report
+    // -----------------------
+
+    const integrity =
+        reportData.integrity || {};
+
+    document.getElementById("integrityScore").innerHTML =
+        (integrity.integrity_score || 0) * 100 + "%";
+
+    document.getElementById("riskLevel").innerHTML =
+        integrity.risk_level || "-";
+
+    document.getElementById("tabSwitches").innerHTML =
+        integrity.flag_summary?.tab_switched || 0;
+
+    document.getElementById("multipleFaces").innerHTML =
+        integrity.flag_summary?.multiple_faces_detected || 0;
+
+    document.getElementById("faceMissing").innerHTML =
+        integrity.flag_summary?.face_not_detected || 0;
+
+    document.getElementById("fullscreenExit").innerHTML =
+        integrity.flag_summary?.fullscreen_exited || 0;
+
+    document.getElementById("pasteAttempts").innerHTML =
+        integrity.flag_summary?.paste_attempted || 0;
+
+
+
+    // -----------------------
+    // Final Verdict
+    // -----------------------
+
+    document.getElementById("verdictBox").innerHTML =
+
+        `<div style="
+            font-size:18px;
+            line-height:1.8;
+            color:#374151;
+        ">
+
+        ${reportData.verdict || "Report Generated Successfully"}
+
+        </div>`;
+
+
+    // -----------------------
+    // Generated Time
+    // -----------------------
+
+    document.getElementById("generatedTime").innerHTML =
+
+        "Generated on : " +
+
+        new Date().toLocaleString();
+
+}
+
+loadReport();
+function downloadReport(){
+
+    const format =
+        document.getElementById("reportFormat").value;
+
+    if(format==="json"){
+
+        const blob = new Blob(
+
+            [JSON.stringify(reportData,null,4)],
+
+            {type:"application/json"}
+
+        );
+
+        const a=document.createElement("a");
+
+        a.href=URL.createObjectURL(blob);
+
+        a.download="AI_Project_Report.json";
+
+        a.click();
+
+    }
+
+    else{
+
+        window.print();
+
+    }
+
+}
+
+</script>

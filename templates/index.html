@@ -1,1 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Project Submission Analyzer</title>
 
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<header>
+  AI Project Submission Analyzer + Viva System
+</header>
+
+<div class="container">
+
+  <!-- PROJECT FORM -->
+  <div class="card">
+    <h3>Student Project Submission</h3>
+
+    <div class="form-field">
+      <label for="studentName">Student Name</label>
+      <input type="text" id="studentName" placeholder="Enter your name" />
+    </div>
+
+    <div class="form-field">
+      <label for="projectTitle">Project Title</label>
+      <input type="text" id="projectTitle" placeholder="Enter project title" />
+    </div>
+
+    <div class="form-field">
+      <label for="projectDesc">Project Description</label>
+      <textarea id="projectDesc" placeholder="Briefly describe your project"></textarea>
+    </div>
+
+    <div class="form-field">
+      <label for="zipFile">Upload Project ZIP</label>
+      <input type="file" id="zipFile" accept=".zip" />
+    </div>
+
+    <div class="form-actions">
+      <button onclick="submitProject()">Analyze and Continue</button>
+    </div>
+
+    <div class="status-message" id="submissionStatus">Fill in the form and upload your ZIP.</div>
+<script>
+async function submitProject() {
+  const formData = new FormData();
+
+  formData.append("student_name", document.getElementById("studentName").value || "");
+  formData.append("project_title", document.getElementById("projectTitle").value || "");
+  const projectDescEl = document.getElementById("projectDesc");
+  const outcomesEl = document.getElementById("outcomes");
+  formData.append("project_description", projectDescEl ? projectDescEl.value : "");
+  formData.append(
+    "project_outcomes",
+    outcomesEl ? outcomesEl.value : (projectDescEl ? projectDescEl.value : "")
+  );
+  // `skills` field is optional in the UI; only append if present
+  const skillsEl = document.getElementById("skills");
+  if (skillsEl) {
+    formData.append("skill_catalog", skillsEl.value);
+  }
+
+  const fileInput = document.getElementById("zipFile");
+  if (!fileInput || fileInput.files.length === 0) {
+    document.getElementById("submissionStatus").innerText = "Please upload a ZIP project file before continuing.";
+    return;
+  }
+
+  formData.append("zip_file", fileInput.files[0]);
+
+  document.getElementById("submissionStatus").innerText = "Analyzing... please wait";
+
+  try {
+    const response = await fetch("/analyze-submission", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    localStorage.setItem('analysisResult', JSON.stringify(data));
+
+    document.getElementById("submissionStatus").innerText = "Analysis complete. Redirecting to viva page...";
+    window.location = '/student';
+  } catch (err) {
+    document.getElementById("submissionStatus").innerText =
+      "Error submitting project: " + err.message;
+  }
+}
+</script>
+
+</body>
+</html>

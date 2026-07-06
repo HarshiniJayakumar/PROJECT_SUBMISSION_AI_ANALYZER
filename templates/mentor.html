@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mentor Dashboard - AI Project Evaluator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<header>
+  Mentor Dashboard - AI Project Submission Analyzer
+</header>
+
+<div class="container">
+
+  <!-- LEFT PANEL -->
+  <div class="card student-list">
+    <h3>Student Submissions</h3>
+
+    <div class="student" onclick="loadStudent('1')">
+      👨‍🎓 John Doe - AI Chatbot Project
+    </div>
+
+    <div class="student" onclick="loadStudent('2')">
+      👩‍🎓 Sarah - Disease Prediction System
+    </div>
+
+    <div class="student" onclick="loadStudent('3')">
+      👨‍🎓 Ravi - Face Recognition App
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="card">
+
+    <h3>Submission Details</h3>
+
+    <div class="section-title">Project Summary</div>
+    <pre id="summary">Select a student</pre>
+
+    <div class="section-title">Detected Skills</div>
+    <div id="skills"></div>
+
+    <div class="section-title">Interview Questions</div>
+    <pre id="questions"></pre>
+
+    <div class="section-title">Outcome Evaluation</div>
+    <pre id="outcomes"></pre>
+
+    <div class="section-title">Integrity Report</div>
+    <pre id="integrity"></pre>
+
+    <button onclick="startViva()">Start Viva Session</button>
+
+  </div>
+
+</div>
+
+<script>
+let currentStudent = null;
+
+function loadStudent(id) {
+  currentStudent = id;
+
+  // Simulated backend data (replace with API call later)
+  const data = {
+    "1": {
+      summary: "AI Chatbot using Flask + NLP",
+      skills: ["Python", "Flask", "NLP"],
+      questions: [
+        "What is intent classification?",
+        "Why Flask instead of Django?",
+        "Explain your chatbot architecture"
+      ],
+      outcomes: {
+        "REST API": "met",
+        "NLP Processing": "met",
+        "Database": "partial"
+      },
+      integrity: {
+        score: 92,
+        risk: "low"
+      }
+    }
+  };
+
+  const student = data[id];
+
+  document.getElementById("summary").innerText = student.summary;
+
+  document.getElementById("skills").innerHTML =
+    student.skills.map(s => `<span class='badge'>${s}</span>`).join("");
+
+  document.getElementById("questions").innerText =
+    student.questions.join("\n\n");
+
+  document.getElementById("outcomes").innerText =
+    JSON.stringify(student.outcomes, null, 2);
+
+  document.getElementById("integrity").innerText =
+    JSON.stringify(student.integrity, null, 2);
+}
+
+function startViva() {
+  if (!currentStudent) {
+    alert("Select a student first!");
+    return;
+  }
+
+  fetch("/viva-session/start", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ student_id: currentStudent })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert("Viva Started! Session ID: " + data.session_id);
+  })
+  .catch(err => {
+    alert("Error starting viva: " + err.message);
+  });
+}
+</script>
+
+</body>
+</html>
