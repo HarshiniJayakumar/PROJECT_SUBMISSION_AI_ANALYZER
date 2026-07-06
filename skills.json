@@ -1,0 +1,70 @@
+[
+    {
+        "skill_id": "uuid-1",
+        "skill_name": "Python"
+    },
+    {
+        "skill_id": "uuid-2",
+        "skill_name": "FastAPI"
+    },
+    {
+        "skill_id": "uuid-3",
+        "skill_name": "Flask"
+    },
+    {
+        "skill_id": "uuid-4",
+        "skill_name": "OpenCV"
+    },
+    {
+        "skill_id": "uuid-5",
+        "skill_name": "NumPy"
+    },
+    {
+        "skill_id": "uuid-6",
+        "skill_name": "Pandas"
+    },
+    {
+        "skill_id": "uuid-7",
+        "skill_name": "TensorFlow"
+    },
+    {
+        "skill_id": "uuid-8",
+        "skill_name": "Keras"
+    },
+    {
+        "skill_id": "uuid-9",
+        "skill_name": "Machine Learning"
+    },
+    {
+        "skill_id": "uuid-10",
+        "skill_name": "Deep Learning"
+    },
+    {
+        "skill_id": "uuid-11",
+        "skill_name": "REST API"
+    },
+    {
+        "skill_id": "uuid-12",
+        "skill_name": "SQLite"
+    },
+    {
+        "skill_id": "uuid-13",
+        "skill_name": "PostgreSQL"
+    },
+    {
+        "skill_id": "uuid-14",
+        "skill_name": "Git"
+    },
+    {
+        "skill_id": "uuid-15",
+        "skill_name": "HTML"
+    },
+    {
+        "skill_id": "uuid-16",
+        "skill_name": "CSS"
+    },
+    {
+        "skill_id": "uuid-17",
+        "skill_name": "JavaScript"
+    }
+]
